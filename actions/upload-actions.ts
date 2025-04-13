@@ -1,9 +1,8 @@
 'use server';
 
 import { fetchandExtractPdfText } from "@/lib/langchain";
-import { summarizeWithGeminiAI } from "@/lib/geminiai"; // Retain Gemini AI import
+import { summarizeWithGeminiAI } from "@/lib/geminiai";
 import { auth } from "@clerk/nextjs/server";
-import { getDbConnection } from "@/lib/db";
 
 /**
  * Processes the uploaded PDF and extracts its text content
@@ -82,84 +81,6 @@ export async function summarizeExtractedText(extractedText: string) {
 }
 
 /**
- * Saves PDF summary to the database
- * @param {Object} params - The summary parameters
- * @param {string} params.fileUrl - URL of the stored PDF
- * @param {string} params.summary - Generated summary content
- * @param {string} params.title - Title of the summary
- * @returns {Promise<{success: boolean, message?: string}>}
- * @throws {Error} When required fields are missing or database operation fails
- */
-async function savePdfSummary({
-    fileUrl,
-    summary,
-    title
-}: {
-    fileUrl: string;
-    summary: string;
-    title: string;
-}): Promise<{ success: boolean; message?: string }> {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) {
-        throw new Error('Unauthorized: User not authenticated');
-    }
-
-    // Input validation
-    if (!fileUrl || !summary || !title) {
-        throw new Error('Missing required fields');
-    }
-
-    try {
-        const sql = await getDbConnection();
-        
-        // First, get the user's UUID from the users table using clerk_user_id
-        const userResult = await sql`
-            SELECT id 
-            FROM users 
-            WHERE clerk_user_id = ${clerkUserId}
-        `;
-
-        if (!userResult || userResult.length === 0) {
-            throw new Error('User not found in database');
-        }
-
-        const userUuid = userResult[0].id;
-
-        // Insert the summary with the correct user UUID
-        await sql`
-            INSERT INTO summaries (
-                user_id,
-                title,
-                pdf_url,
-                summary,
-                status
-            ) VALUES (
-                ${userUuid},
-                ${title},
-                ${fileUrl},
-                ${summary},
-                'completed'
-            )
-        `;
-
-        return { 
-            success: true, 
-            message: 'Summary saved successfully' 
-        };
-    } catch (error) {
-        console.error('Error saving PDF summary:', error);
-        if (error instanceof Error) {
-            // Check for specific database errors
-            if (error.message.includes('foreign key constraint')) {
-                throw new Error('Failed to save: User reference invalid');
-            }
-            throw new Error(error.message);
-        }
-        throw new Error('Failed to save PDF summary');
-    }
-}
-
-/**
  * Main action to store PDF summary
  * @param {Object} params - The action parameters
  * @returns {Promise<{success: boolean, message: string, data?: any}>}
@@ -178,6 +99,14 @@ export async function storePdfSummaryAction({
     data?: any;
 }> {
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return {
+                success: false,
+                message: 'Unauthorized: User not authenticated',
+            };
+        }
+
         // Validate required inputs
         if (!fileUrl || !summary || !title) {
             return {
@@ -186,26 +115,18 @@ export async function storePdfSummaryAction({
             };
         }
 
-        // Store the summary
-        const result = await savePdfSummary({
-            fileUrl,
-            summary,
-            title,
-        });
-
-        // Return success response
+        // Return the summary data directly
         return {
             success: true,
-            message: 'PDF summary stored successfully',
-            data: result
+            message: 'PDF summary processed successfully',
+            data: { fileUrl, summary, title }
         };
 
     } catch (error) {
-        // Error handling and logging
         console.error('Error in storePdfSummaryAction:', error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : 'Failed to store PDF summary',
+            message: error instanceof Error ? error.message : 'Failed to process PDF summary',
         };
     }
-// }
+}

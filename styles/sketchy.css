@@ -1,0 +1,19 @@
+.border-sketchy-sm {
+  border: 2px dashed black;
+}
+
+.border-sketchy-md {
+  border: 4px dashed black;
+}
+
+.border-sketchy-lg {
+  border: 6px dashed black;
+}
+
+.hover\:border-sketchy-lg:hover {
+  border: 6px dashed black;
+}
+
+.hover\:border-sketchy-sm:hover {
+  border: 2px dashed black;
+}
