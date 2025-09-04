@@ -4,26 +4,25 @@
 import * as React from 'react';
 import { useEdgeStore } from '@/lib/edgestore';
 import { toast } from 'sonner';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { Progress } from '../ui/progress';
 
 // Define what props our component needs
 interface PdfUploadSectionProps {
-  isSignedIn: boolean; // To check if user is logged in
-  onUploadComplete: (url: string) => void; // Function to run after upload finishes
+  isSignedIn: boolean;
+  onUploadComplete: (url: string) => void;
 }
 
 export function PdfUploadSection({ isSignedIn, onUploadComplete }: PdfUploadSectionProps) {
-  // State management for our component
-  const [file, setFile] = React.useState<File>(); // Store the selected PDF file
-  const [error, setError] = React.useState<string>(''); // Store any error messages
-  const [isUploading, setIsUploading] = React.useState(false); // Track if upload is in progress
-  const [isDragging, setIsDragging] = React.useState(false); // Track if user is dragging a file
-  const [uploadProgress, setUploadProgress] = React.useState<number>(0); // Track upload progress
-  const { edgestore } = useEdgeStore(); // Our file storage service
+  // State management
+  const [file, setFile] = React.useState<File>();
+  const [error, setError] = React.useState<string>('');
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
+  const { edgestore } = useEdgeStore();
 
-  // Check if the file is valid (PDF and under 10MB)
+  // Validate file function
   const validateFile = (file: File) => {
     if (!file.type.includes('pdf')) {
       toast.error('📚 Oops! PDFs only please!', {
@@ -33,7 +32,7 @@ export function PdfUploadSection({ isSignedIn, onUploadComplete }: PdfUploadSect
       return false;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("📦 That's a big file!", {
+      toast.error('📦 That\'s a big file!', {
         description: 'Keep it under 10MB please.',
         duration: 3000,
       });
@@ -42,27 +41,23 @@ export function PdfUploadSection({ isSignedIn, onUploadComplete }: PdfUploadSect
     return true;
   };
 
-  // Handle the file upload process
+  // Handle upload function
   const handleUpload = async () => {
-    // Check if user is signed in
     if (!isSignedIn) {
       toast.error('Please sign in to upload files');
       return;
     }
 
-    // Make sure we have a file to upload
     if (!file) return;
 
     try {
-      // Start upload process
       setIsUploading(true);
       let loadingToastId: string | number = '';
 
-      // Upload the file with progress tracking
       const uploadPromise = await edgestore.publicFiles.upload({
         file,
         onProgressChange: (progress) => {
-          setUploadProgress(progress);
+          setUploadProgress(progress); // Update progress state
           if (progress === 0) {
             loadingToastId = toast.loading('🚀 Initiating upload...', {
               duration: Infinity,
@@ -78,24 +73,31 @@ export function PdfUploadSection({ isSignedIn, onUploadComplete }: PdfUploadSect
         },
       });
 
-      // Show success message and notify parent component
       toast.dismiss(loadingToastId);
       toast.success('🎉 Upload complete!', {
-        description: 'Your PDF is safely in the cloud.',
+        description: "Your PDF is safely in the cloud.",
         duration: 2000,
       });
 
       onUploadComplete(uploadPromise.url);
+
     } catch (err) {
-      // Handle any errors during upload
       toast.error('⚠️ Upload failed', {
-        description: 'Please try again.',
+        description: "Please try again.",
         duration: 3000,
       });
       console.error(err);
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // Handle file removal
+  const handleRemoveFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFile(undefined);
+    setUploadProgress(0);
+    setError('');
   };
 
   // Drag and drop handlers
@@ -129,128 +131,131 @@ export function PdfUploadSection({ isSignedIn, onUploadComplete }: PdfUploadSect
   };
 
   return (
-    <section className="w-full min-h-screen flex flex-col items-center justify-center py-8 overflow">
-      {/* Main container */}
-      <div className="w-full max-w-3xl px-4 space-y-6">
-        {/* Upload box */}
-        <div className="bg-yellow-50 rounded-xl border-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col">
-          {/* Title */}
-          <h2 className="text-lg lg:text-3xl font-extrabold text-center text-black mb-4">Upload PDF</h2>
+    <div className="relative w-full">
+     
 
-          {/* Hidden file input */}
-          <input
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={(e) => {
-              const selectedFile = e.target.files?.[0];
-              if (selectedFile && validateFile(selectedFile)) {
-                setFile(selectedFile);
-                setError('');
-              } else {
-                setFile(undefined);
-              }
-            }}
-            className="hidden"
-            id="pdf-upload"
-          />
+      <div className="max-w-5xl mx-auto px-2 sm:px-3 lg:px-4 py-12 md:py-16 relative z-10">
+        <div className="mb-3 flex items-center space-x-1">
+          <div className="h-px w-6 bg-lime-400"></div>
+          <p className="text-xs uppercase tracking-widest font-mono text-lime-400">Secure Document Upload</p>
+        </div>
 
-          {/* Drag and drop zone */}
+        {/* Hidden File Input */}
+        <input
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={(e) => {
+            const selectedFile = e.target.files?.[0];
+            if (selectedFile && validateFile(selectedFile)) {
+              setFile(selectedFile);
+              setError('');
+            }
+          }}
+          className="hidden"
+          id="pdf-upload"
+        />
+
+        {/* Drop Zone Area */}
+        <div className="flex flex-col w-full">
           <div
-            className={`grid border-2 border-dashed ${
-              isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
-            } w-full h-[300px] rounded-md p-4 items-center justify-center cursor-pointer`}
+            className={`border-2 ${isDragging ? 'border-lime-400 bg-black/40' : 'border-gray-800'} 
+            rounded-none p-8 cursor-pointer transition-all duration-300 relative overflow-hidden group
+            hover:border-lime-400 hover:bg-black/40`}
             onClick={() => document.getElementById('pdf-upload')?.click()}
             onDragEnter={handleDragIn}
             onDragLeave={handleDragOut}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <div className="flex flex-col items-center justify-center text-center">
-              <Image
-                src="/pdf.png"
-                alt="Upload PDF"
-                width={130}
-                height={130}
-                className="transform transition-all duration-300 ease-in-out hover:scale-110"
+            {/* Cancel Button - Circular with cross sign */}
+            {file && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveFile(e);
+                }}
+                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/80 border
+                border-gray-700 hover:border-rose-500 flex items-center justify-center
+                transition-all duration-300 group/cancel z-20"
+              >
+                <svg 
+                  className="w-3 h-3 text-gray-400 group-hover/cancel:text-rose-500 transition-colors duration-300" 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2.5" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            )}
+
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
+              <Image 
+                src="/pdf.png" 
+                alt="Upload PDF" 
+                width={60} 
+                height={60} 
+                className="transition-transform duration-300 group-hover:scale-110" 
               />
-              <div className="flex gap-2 mt-4">
-                <p className="font-bold text-green-500 underline">Choose</p>
-                <p className="font-bold text-gray-600">Your Files Here.</p>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold font-mono tracking-tight">
+                  {file ? file.name : 'Choose or Drop PDF'}
+                </h3>
+                <p className="text-base font-mono text-gray-400">Maximum file size: 10MB</p>
               </div>
-              <p className="font-semibold text-sm text-gray-600 m-0.5">10MB Max PDF Size</p>
             </div>
-          </div>
 
-          {/* Error and sign in messages */}
-          {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
-          {!isSignedIn && (
-            <p className="text-sm text-red-500 mt-2">Please sign in to upload files</p>
-          )}
-
-          {/* File status card - Moved inside the upload box */}
-          {file && (
-            <div className="w-full p-4 rounded-lg bg-gray-900 text-white shadow-md mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src="/pdf.png"
-                    alt="PDF file"
-                    width={50}
-                    height={50}
-                    className="object-contain"
-                  />
-                  <div className="flex flex-col">
-                    <p className="font-medium text-sm truncate max-w-[200px]">{file.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  {isUploading && (
-                    <p className="text-sm font-semibold text-blue-50">{uploadProgress}%</p>
-                  )}
-                  <button
-                    onClick={() => {
-                      setFile(undefined);
-                      setIsUploading(false);
-                    }}
-                    className="p-1 hover:bg-yellow-300 rounded-full transition-colors text-black"
-                  >
-                    <X size={16} className="text-gray-50" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="w-full h-2 relative">
-                <Progress
-                  value={uploadProgress}
-                  className="h-2 transition-all duration-300"
+            {/* Upload Progress */}
+            {file && uploadProgress > 0 && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-800">
+                <div
+                  className="h-full bg-lime-400 transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Upload button */}
-          {file && (
-            <button
-              onClick={handleUpload}
-              disabled={isUploading || !isSignedIn}
-              className="mt-4 px-4 py-4 bg-yellow-400 hover:bg-yellow-400/80 rounded-md flex items-center justify-center gap-2 disabled:opacity-50 "
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="font-semibold">Uploading...</span>
-                </>
-              ) : (
-                <span className="font-semibold">Upload PDF</span>
-              )}
-            </button>
-          )}
+          {/* Action Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUpload();
+            }}
+            disabled={isUploading || !isSignedIn || !file}
+            className={`bg-white text-black font-mono text-xl font-bold px-8 py-4 border-2 border-white 
+            hover:bg-lime-400 hover:border-gray-800 hover:text-gray-800 hover:font-semibold 
+            transition-colors duration-300 shadow-xl mt-4 relative z-10
+            ${(isUploading || !isSignedIn || !file) ? 'opacity-60 cursor-not-allowed' : ''}`}
+          >
+            {isUploading ? (
+              <span className="flex items-center justify-center gap-1">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Processing...
+              </span>
+            ) : 'PROCESS PDF'}
+          </button>
         </div>
+
+        {/* Error Messages */}
+        {error && (
+          <p className="text-base text-red-500 mt-2 font-mono text-center">{error}</p>
+        )}
+        {!isSignedIn && (
+          <p className="text-base text-red-500 mt-2 font-mono text-center">
+            Please sign in to upload files
+          </p>
+        )}
       </div>
-    </section>
+
+      {/* Brutalist decorative elements */}
+      <div className="absolute top-6 right-6 w-8 h-8 bg-lime-400 hidden md:block"></div>
+    </div>
   );
 }

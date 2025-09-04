@@ -2,40 +2,62 @@ import { FileText } from "lucide-react";
 import NavLink from "./nav-link";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { Roboto_Mono } from 'next/font/google';
+
+const cascadia = Roboto_Mono({ subsets: ['latin'], weight: ['400', '700'] });
 
 export default function Header() {
-    const isLoggedIn = false; // Replace with actual authentication logic
+    // Professional header: logo at far left, nav in center, login/signin at far right
     return (
-        <nav className="bg-yellow-50 z-10 mx-4 my-4 rounded-2xl border-2 shadow-[5px_6px_0px_0px_rgba(0,0,0,1)]">
-            <div className="container flex items-center justify-between gap-8 py-4 lg:px-8 px-4 mx-auto max-w-7xl">
-                <div className="flex items-center gap-2">
-                    <Link href='/' className="flex items-center gap-2">
-                        <FileText className="h-8 w-8 lg:h-10 lg:w-10 text-black hover:rotate-12 transform transition-all duration-200" />
-                        <span className="font-extrabold text-lg lg:text-3xl text-black">
-                            AI Summary..
-                        </span>
-                    </Link>
-                </div>
-                <div className="flex items-center gap-4">
-                    <SignedIn>
-                        <NavLink 
-                            href="/upload" 
-                            className="text-base lg:text-lg font-semibold text-black hover:text-black transition-colors"
-                        >
-                            Upload a PDF
-                        </NavLink>
-                        <UserButton 
-                            afterSignOutUrl="/"
-                            appearance={{
-                                elements: {
-                                    avatarBox: "w-10 h-10"
-                                }
-                            }}
-                        />
-                    </SignedIn>
-                    <SignedOut>
-                        <NavLink href='/sign-in' className="text-sm lg:text-base text-black">Sign In</NavLink>
-                    </SignedOut>
+        <nav className="w-full  bg-lime-400  fixed top-0 left-0 right-0 z-50">
+            <div className="max-w-full mx-auto px-4">
+                <div className="flex items-center h-16 justify-between">
+                    {/* Logo Section - Start */}
+                    <div className="flex items-center gap-2 px-6 py-2 border-r-2 border-gray-600 h-full">
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <FileText className="h-8 w-8 " />
+                            <span className={`text-gray-900 font-bold text-xl ${cascadia.className}`}>AI - Based Summary</span>
+                        </Link>
+                    </div>
+
+
+                    {/* Login/SignIn Section - End */}
+                    <div className="flex items-center px-6 border-l-2 border-gray-600 h-full min-w-[180px] justify-end">
+                        <SignedIn>
+                            <div className="flex items-center">
+                                <NavLink 
+                                    href="/upload" 
+                                    className="inline-flex items-center px-2 py-2 text-base font-semibold rounded-md  text-gray-700 hover:bg-gray-100"
+                                >
+                                    Upload a PDF
+                                </NavLink>
+                                <div className="ml-2">
+                                    <UserButton 
+                                        afterSignOutUrl="/"
+                                        appearance={{
+                                            elements: {
+                                                avatarBox: "w-8 h-8 mt-2 border-2 border-gray-200 shadow-sm"
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </SignedIn>
+                        <SignedOut>
+               <NavLink
+  href="/sign-in"
+  className="inline-flex items-center whitespace-nowrap px-4 py-2 
+             text-lg font-bold text-gray-700 
+            
+             hover:bg-gray-100 
+             transition-colors duration-200 rounded-md"
+>
+  Sign In
+</NavLink>
+
+
+                        </SignedOut>
+                    </div>
                 </div>
             </div>
         </nav>
