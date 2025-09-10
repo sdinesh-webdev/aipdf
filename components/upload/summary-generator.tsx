@@ -22,7 +22,8 @@ export function SummaryGenerator({ extractedText, fileUrl }: SummaryGeneratorPro
       const summarizationResult = await summarizeExtractedText(extractedText);
       toast.dismiss(summaryToastId);
       
-      if (summarizationResult.success) {
+      if (summarizationResult.success && summarizationResult.data) {
+        // ✅ only set if data is non-null
         setSummary(summarizationResult.data);
         await storeSummary(summarizationResult.data);
       } else {
